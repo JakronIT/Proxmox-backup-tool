@@ -25,7 +25,7 @@ The script backs up these critical configuration files:
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/yourusername/proxmox-node-backup.git
+   git clone https://github.com/JakronIT/Proxmox-backup-tool.git
    cd proxmox-node-backup
    ```
 
@@ -82,3 +82,4 @@ This script has been tested on single node Proxmox VE 8.4.1.
 ## License
 
 MIT License - Feel free to use and modify as needed.
+
