@@ -14,6 +14,34 @@ HOSTNAME=$(hostname)
 DATE_NOW=$(date +%Y-%m-%d_%H-%M-%S)
 DATE_TODAY=$(date +%Y-%m-%d)
 
+# Webhook notification helper
+# Usage: send_webhook <title> <message> <severity>
+send_webhook() {
+    local title="$1"
+    local message="$2"
+    local severity="$3"
+
+    [ -z "$WEBHOOK_URL" ] && return 0
+
+    curl -fsSL -X POST "$WEBHOOK_URL" \
+        -H "Content-Type: application/json" \
+        -d "{
+            \"title\": \"$title\",
+            \"message\": \"$message\",
+            \"severity\": \"$severity\",
+            \"timestamp\": $(date +%s)
+        }" || echo "WARNING: Failed to send webhook notification"
+}
+
+# Track backup outcome for the EXIT trap
+BACKUP_MESSAGE="Backup did not complete"
+BACKUP_SEVERITY="error"
+
+_on_exit() {
+    send_webhook "Proxmox Backup: $HOSTNAME" "$BACKUP_MESSAGE" "$BACKUP_SEVERITY"
+}
+trap _on_exit EXIT
+
 # Create backup directory if it doesn't exist
 mkdir -p "$BACKUP_PATH"
 
@@ -65,12 +93,14 @@ echo "Location: $BACKUP_FILE"
 
 # Check if destination directory exists and is accessible
 if [ ! -d "$BACKUP_PATH" ]; then
-    echo "ERROR: Directory $BACKUP_PATH does not exist or is not accessible"
+    BACKUP_MESSAGE="ERROR: Directory $BACKUP_PATH does not exist or is not accessible"
+    echo "$BACKUP_MESSAGE"
     exit 1
 fi
 
 if [ ! -w "$BACKUP_PATH" ]; then
-    echo "ERROR: No write permissions for $BACKUP_PATH"
+    BACKUP_MESSAGE="ERROR: No write permissions for $BACKUP_PATH"
+    echo "$BACKUP_MESSAGE"
     exit 1
 fi
 
@@ -100,7 +130,8 @@ if tar -czf "$BACKUP_FILE" --absolute-names $BACKUP_LIST 2>/dev/null; then
     BACKUP_SIZE=$(du -h "$BACKUP_FILE" | cut -f1)
     echo "Backup size: $BACKUP_SIZE"
 else
-    echo "ERROR: Failed to create backup"
+    BACKUP_MESSAGE="ERROR: Failed to create backup at $BACKUP_FILE"
+    echo "$BACKUP_MESSAGE"
     exit 1
 fi
 
@@ -160,6 +191,9 @@ done
 rm -f /tmp/keep_files.tmp
 
 echo "$(date): Backup and cleanup completed successfully"
+
+BACKUP_MESSAGE="Backup completed successfully: $BACKUP_FILE ($BACKUP_SIZE)"
+BACKUP_SEVERITY="info"
 
 # Show statistics
 echo "Current backup files:"
