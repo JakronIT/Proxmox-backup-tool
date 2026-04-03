@@ -14,4 +14,4 @@ DAILY_RETENTION_DAYS=7
 WEEKLY_RETENTION_WEEKS=3
 
 # Webhook notification (set to empty string to disable)
-WEBHOOK_URL="http://YOUR_WEBHOOK_IP:5000/webhook"
+WEBHOOK_URL="https://YOUR_WEBHOOK_IP:5000/webhook"

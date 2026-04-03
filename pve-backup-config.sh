@@ -23,14 +23,20 @@ send_webhook() {
 
     [ -z "$WEBHOOK_URL" ] && return 0
 
-    curl -fsSL -X POST "$WEBHOOK_URL" \
+    # Escape double quotes and backslashes to produce valid JSON
+    local safe_title="${title//\\/\\\\}"; safe_title="${safe_title//\"/\\\"}"
+    local safe_message="${message//\\/\\\\}"; safe_message="${safe_message//\"/\\\"}"
+    local safe_severity="${severity//\\/\\\\}"; safe_severity="${safe_severity//\"/\\\"}"
+
+    local curl_err
+    curl_err=$(curl -fsSL -X POST "$WEBHOOK_URL" \
         -H "Content-Type: application/json" \
         -d "{
-            \"title\": \"$title\",
-            \"message\": \"$message\",
-            \"severity\": \"$severity\",
+            \"title\": \"$safe_title\",
+            \"message\": \"$safe_message\",
+            \"severity\": \"$safe_severity\",
             \"timestamp\": $(date +%s)
-        }" || echo "WARNING: Failed to send webhook notification"
+        }" 2>&1) || echo "WARNING: Failed to send webhook notification: $curl_err"
 }
 
 # Track backup outcome for the EXIT trap
