@@ -8,6 +8,7 @@ A simple bash script to backup essential Proxmox VE configuration files. This to
 - Maintains intelligent retention: 7 daily backups + weekly backups for 3 weeks
 - Creates compressed tar.gz archives with timestamps
 - Automatically cleans up old backups
+- Sends webhook notifications on backup success or failure
 
 ## Files backed up
 
@@ -67,11 +68,35 @@ Edit `config.sh` to customize:
 - `BACKUP_PREFIX` - Prefix for backup files
 - `DAILY_RETENTION_DAYS` - How many daily backups to keep (default: 7)
 - `WEEKLY_RETENTION_WEEKS` - How many weekly backups to keep (default: 3)
+- `WEBHOOK_URL` - URL to receive backup notifications (set to `""` to disable)
+
+## Webhook Notifications
+
+The script POSTs a JSON notification to `WEBHOOK_URL` on every exit — whether the backup succeeds or fails.
+
+**Payload shape:**
+```json
+{
+  "title": "Proxmox Backup: <hostname>",
+  "message": "Backup completed successfully: /backups/pve-host-config_mynode_2026-04-03_04-00-00.tar.gz (42M)",
+  "severity": "info",
+  "timestamp": 1712173689
+}
+```
+
+- `severity` is `"info"` on success and `"error"` on any failure (permission denied, tar error, unexpected exit).
+- `timestamp` is a Unix epoch integer.
+
+**To disable notifications**, set `WEBHOOK_URL` to an empty string in `config.sh`:
+```bash
+WEBHOOK_URL=""
+```
 
 ## Requirements
 
 - Bash shell
 - tar with gzip support
+- curl (for webhook notifications)
 - Standard Unix utilities (find, awk, date)
 - Write permissions to backup destination
 
